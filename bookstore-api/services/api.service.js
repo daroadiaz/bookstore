@@ -29,6 +29,17 @@ module.exports = {
 					"GET /books/my-library": "books.getMyLibrary",
 					"GET /books/library/front-cover/:id": "books.getCover"
 				},
+				onBeforeCall(ctx, route, req, res) {
+					if (req.$params && typeof req.$params === 'object') {
+						Object.keys(req.$params).forEach(key => {
+							if (req.$params[key] === 'true') {
+								req.$params[key] = true;
+							} else if (req.$params[key] === 'false') {
+								req.$params[key] = false;
+							}
+						});
+					}
+				},
 				callingOptions: {},
 				bodyParsers: {
 					json: {

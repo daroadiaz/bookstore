@@ -34,10 +34,8 @@ module.exports = {
 			async handler(ctx) {
 				const { q } = ctx.params;
 				
-				// Asegurarse de que el userId es un string
 				const userId = ctx.meta.user.id.toString();
 
-				// Guardar la búsqueda
 				await ctx.call("searches.saveSearch", { 
 					userId: userId,
 					query: q 
@@ -260,7 +258,12 @@ module.exports = {
 			params: {
 				title: { type: "string", optional: true },
 				author: { type: "string", optional: true },
-				excludeNoReview: { type: "boolean", optional: true, default: false },
+				excludeNoReview: { 
+					type: "boolean", 
+					optional: true, 
+					default: false,
+					convert: true
+				},
 				sortByRating: { type: "enum", values: ["asc", "desc"], optional: true }
 			},
 			async handler(ctx) {
