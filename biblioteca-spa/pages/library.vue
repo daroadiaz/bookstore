@@ -87,8 +87,8 @@ const filters = ref({
   excludeNoReview: false
 })
 
-const editingBook = ref(null)
-const deletingBook = ref(null)
+const editingBook = ref<any>(null)
+const deletingBook = ref<any>(null)
 
 const filteredBooks = computed(() => {
   let books = [...myLibrary.value]
@@ -142,7 +142,7 @@ const handleSaveEdit = async (bookId: string, updates: any) => {
 }
 
 const confirmDelete = async () => {
-  if (deletingBook.value) {
+  if (deletingBook.value && deletingBook.value.id) {
     const success = await booksStore.deleteBook(deletingBook.value.id)
     if (success) {
       deletingBook.value = null

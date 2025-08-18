@@ -37,12 +37,22 @@
 </template>
 
 <script setup lang="ts">
-defineProps({
-  book: {
-    type: Object,
-    required: true
-  }
-})
+interface Book {
+  id?: string
+  title: string
+  author: string
+  publishYear: number
+  coverBase64?: string
+  review?: string
+  rating?: number
+}
 
-defineEmits(['edit', 'delete'])
+defineProps<{
+  book: Book
+}>()
+
+defineEmits<{
+  edit: [book: Book]
+  delete: [book: Book]
+}>()
 </script>

@@ -5,7 +5,7 @@ export default defineNuxtConfig({
   css: ['~/assets/scss/main.scss'],
   runtimeConfig: {
     public: {
-      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || ''
     }
   },
   ssr: false,
@@ -16,6 +16,17 @@ export default defineNuxtConfig({
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' }
       ]
+    }
+  },
+  devServer: {
+    port: 3001
+  },
+  nitro: {
+    devProxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      }
     }
   }
 })

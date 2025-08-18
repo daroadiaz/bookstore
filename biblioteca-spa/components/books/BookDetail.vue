@@ -4,7 +4,7 @@
       ← Volver a resultados
     </button>
     
-    <div class="book-detail">
+    <div v-if="currentBook" class="book-detail">
       <div class="detail-header">
         <img
           v-if="currentBook.coverBase64"
@@ -61,6 +61,13 @@
       </div>
     </div>
     
+    <div v-else class="empty-state">
+      <h2>No se ha seleccionado ningún libro</h2>
+      <button class="btn btn-primary" @click="handleBack">
+        Volver a la búsqueda
+      </button>
+    </div>
+    
     <SuccessMessage v-if="showSuccess" message="¡Libro guardado exitosamente!" />
   </div>
 </template>
@@ -80,6 +87,11 @@ const handleBack = () => {
 }
 
 const saveBook = async () => {
+  if (!currentBook.value) {
+    alert('No hay libro seleccionado')
+    return
+  }
+  
   if (rating.value === 0) {
     alert('Por favor, selecciona una calificación')
     return

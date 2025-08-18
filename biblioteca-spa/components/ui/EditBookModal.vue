@@ -41,22 +41,34 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps({
-  book: {
-    type: Object,
-    required: true
-  }
-})
+interface Book {
+  id?: string
+  title: string
+  author: string
+  publishYear: number
+  coverBase64?: string
+  review?: string
+  rating?: number
+}
 
-const emit = defineEmits(['close', 'save'])
+const props = defineProps<{
+  book: Book
+}>()
+
+const emit = defineEmits<{
+  close: []
+  save: [bookId: string, updates: { review: string, rating: number }]
+}>()
 
 const localReview = ref(props.book.review || '')
 const localRating = ref(props.book.rating || 0)
 
 const handleSave = () => {
-  emit('save', props.book.id, {
-    review: localReview.value,
-    rating: localRating.value
-  })
+  if (props.book.id) {
+    emit('save', props.book.id, {
+      review: localReview.value,
+      rating: localRating.value
+    })
+  }
 }
 </script>

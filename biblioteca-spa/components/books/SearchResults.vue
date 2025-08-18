@@ -40,6 +40,14 @@
 <script setup lang="ts">
 import { useBooksStore } from '~/stores/books'
 
+interface BookResult {
+  title: string
+  author: string
+  publishYear: number
+  coverUrl?: string | null
+  key?: string
+}
+
 const booksStore = useBooksStore()
 const searchResults = computed(() => booksStore.getSearchResults)
 
@@ -47,7 +55,7 @@ const handleBack = () => {
   booksStore.clearSearchResults()
 }
 
-const selectBook = async (book: any) => {
+const selectBook = async (book: BookResult) => {
   let coverBase64 = ''
   
   if (book.coverUrl) {
@@ -56,7 +64,7 @@ const selectBook = async (book: any) => {
       const blob = await response.blob()
       const reader = new FileReader()
       
-      coverBase64 = await new Promise((resolve) => {
+      coverBase64 = await new Promise<string>((resolve) => {
         reader.onloadend = () => resolve(reader.result as string)
         reader.readAsDataURL(blob)
       })

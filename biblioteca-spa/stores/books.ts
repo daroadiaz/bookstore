@@ -15,8 +15,17 @@ interface SearchResult {
   title: string
   author: string
   publishYear: number
-  coverUrl?: string
+  coverUrl?: string | null
   key?: string
+}
+
+interface ApiResponse {
+  success?: boolean
+  results?: any[]
+  searches?: string[]
+  books?: Book[]
+  book?: Book
+  message?: string
 }
 
 export const useBooksStore = defineStore('books', {
@@ -48,18 +57,18 @@ export const useBooksStore = defineStore('books', {
       try {
         console.log(`Buscando libros con query: ${query}`)
         
-        const response = await $fetch(`${config.public.apiBaseUrl}/api/books/search`, {
+        const response = await $fetch<ApiResponse>(`${config.public.apiBaseUrl}/api/books/search`, {
           params: { q: query },
           headers: authStore.getAuthHeader
         })
         
         if (response.success && response.results) {
           this.searchResults = response.results.map((book: any) => ({
-            title: book.title,
+            title: book.title || '',
             author: book.author_name ? book.author_name[0] : 'Autor desconocido',
             publishYear: book.first_publish_year || 0,
-            coverUrl: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : null,
-            key: book.key
+            coverUrl: book.cover_i ? `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg` : undefined,
+            key: book.key || undefined
           }))
           
           console.log(`Se encontraron ${this.searchResults.length} resultados`)
@@ -85,7 +94,7 @@ export const useBooksStore = defineStore('books', {
       try {
         console.log('Obteniendo búsquedas recientes')
         
-        const response = await $fetch(`${config.public.apiBaseUrl}/api/books/last-search`, {
+        const response = await $fetch<ApiResponse>(`${config.public.apiBaseUrl}/api/books/last-search`, {
           headers: authStore.getAuthHeader
         })
         
@@ -121,7 +130,7 @@ export const useBooksStore = defineStore('books', {
         if (filters?.sortByRating) params.sortByRating = filters.sortByRating
         if (filters?.excludeNoReview) params.excludeNoReview = filters.excludeNoReview
         
-        const response = await $fetch(`${config.public.apiBaseUrl}/api/books/my-library`, {
+        const response = await $fetch<ApiResponse>(`${config.public.apiBaseUrl}/api/books/my-library`, {
           params,
           headers: authStore.getAuthHeader
         })
@@ -147,7 +156,7 @@ export const useBooksStore = defineStore('books', {
       try {
         console.log('Agregando libro a la biblioteca:', book.title)
         
-        const response = await $fetch(`${config.public.apiBaseUrl}/api/books/my-library`, {
+        const response = await $fetch<ApiResponse>(`${config.public.apiBaseUrl}/api/books/my-library`, {
           method: 'POST',
           body: book,
           headers: {
@@ -179,7 +188,7 @@ export const useBooksStore = defineStore('books', {
       try {
         console.log(`Actualizando libro ${bookId}`)
         
-        const response = await $fetch(`${config.public.apiBaseUrl}/api/books/my-library/${bookId}`, {
+        const response = await $fetch<ApiResponse>(`${config.public.apiBaseUrl}/api/books/my-library/${bookId}`, {
           method: 'PUT',
           body: updates,
           headers: {
@@ -211,7 +220,7 @@ export const useBooksStore = defineStore('books', {
       try {
         console.log(`Eliminando libro ${bookId}`)
         
-        const response = await $fetch(`${config.public.apiBaseUrl}/api/books/my-library/${bookId}`, {
+        const response = await $fetch<ApiResponse>(`${config.public.apiBaseUrl}/api/books/my-library/${bookId}`, {
           method: 'DELETE',
           headers: authStore.getAuthHeader
         })
@@ -238,7 +247,7 @@ export const useBooksStore = defineStore('books', {
       try {
         console.log(`Obteniendo libro con ID: ${bookId}`)
         
-        const response = await $fetch(`${config.public.apiBaseUrl}/api/books/my-library/${bookId}`, {
+        const response = await $fetch<ApiResponse>(`${config.public.apiBaseUrl}/api/books/my-library/${bookId}`, {
           headers: authStore.getAuthHeader
         })
         
