@@ -136,7 +136,10 @@ export const useBooksStore = defineStore('books', {
         })
         
         if (response.books) {
-          this.myLibrary = response.books
+          this.myLibrary = response.books.map((book: any) => ({
+            ...book,
+            coverBase64: book.coverUrl ? undefined : book.coverBase64
+          }))
           console.log(`Se obtuvieron ${this.myLibrary.length} libros de la biblioteca`)
         }
       } catch (error) {

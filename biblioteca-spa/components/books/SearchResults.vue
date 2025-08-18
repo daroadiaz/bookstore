@@ -61,13 +61,15 @@ const selectBook = async (book: BookResult) => {
   if (book.coverUrl) {
     try {
       const response = await fetch(book.coverUrl)
-      const blob = await response.blob()
-      const reader = new FileReader()
-      
-      coverBase64 = await new Promise<string>((resolve) => {
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(blob)
-      })
+      if (response.ok) {
+        const blob = await response.blob()
+        const reader = new FileReader()
+        
+        coverBase64 = await new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string)
+          reader.readAsDataURL(blob)
+        })
+      }
     } catch (error) {
       console.error('Error al convertir imagen:', error)
     }
