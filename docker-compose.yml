@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # MongoDB Database
   mongodb:
@@ -34,12 +36,16 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      # Usar el nombre del contenedor 'mongodb' en lugar de localhost
       MONGO_URI: mongodb://admin:admin123@mongodb:27017/bookstore_db?authSource=admin
     depends_on:
       mongodb:
         condition: service_healthy
     networks:
       - bookstore-network
+    volumes:
+      - ./bookstore-api:/app
+      - /app/node_modules
 
   # Frontend (Nuxt)
   frontend:
@@ -51,7 +57,7 @@ services:
     ports:
       - "3001:3001"
     environment:
-      NUXT_PUBLIC_API_BASE_URL: http://localhost:3000
+      NUXT_PUBLIC_API_BASE_URL: http://backend:3000
       NITRO_PORT: 3001
       NITRO_HOST: 0.0.0.0
       NODE_ENV: development
@@ -59,6 +65,11 @@ services:
       - backend
     networks:
       - bookstore-network
+    volumes:
+      - ./biblioteca-spa:/app
+      - /app/node_modules
+      - /app/.nuxt
+      - /app/.output
 
 volumes:
   mongodb_data:

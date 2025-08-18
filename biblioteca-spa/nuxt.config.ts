@@ -1,41 +1,32 @@
-// nuxt.config.ts
 export default defineNuxtConfig({
-  ssr: false, // SPA mode
-  
+  compatibilityDate: '2024-04-03',
+  devtools: { enabled: true },
+  modules: ['@pinia/nuxt'],
+  css: ['~/assets/scss/main.scss'],
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || ''
     }
   },
-
-  nitro: {
-    preset: 'node-server',
-    host: process.env.NITRO_HOST || '0.0.0.0',
-    port: parseInt(process.env.NITRO_PORT || '3001')
+  ssr: false,
+  app: {
+    head: {
+      title: 'Biblioteca SPA',
+      meta: [
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' }
+      ]
+    }
   },
-
   devServer: {
-    host: '0.0.0.0',
     port: 3001
   },
-
-  // Módulos necesarios
-  modules: [
-    '@nuxtjs/tailwindcss',
-    '@pinia/nuxt'
-  ],
-
-  // Configuración de desarrollo
-  devtools: { enabled: true },
-
-  // Configuración de build
-  build: {
-    transpile: []
-  },
-
-  // Configuración de CSS
-  css: ['~/assets/css/main.css'],
-
-  // Auto-importar componentes
-  components: true
+  nitro: {
+    devProxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      }
+    }
+  }
 })
