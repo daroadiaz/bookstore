@@ -1,0 +1,478 @@
+{
+	"info": {
+		"_postman_id": "2ee33783-64bc-40c4-8f23-9a4556b01fa6",
+		"name": "Bookstore API",
+		"description": "Collection for testing Bookstore API with Moleculer",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "43472334",
+		"_collection_link": "https://planetary-moon-241933.postman.co/workspace/Team-Workspace~3240badb-2abd-48d5-8816-19b6085bae9a/collection/43472334-2ee33783-64bc-40c4-8f23-9a4556b01fa6?action=share&source=collection_link&creator=43472334"
+	},
+	"item": [
+		{
+			"name": "Auth Tests",
+			"item": [
+				{
+					"name": "Test Authentication",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/greeter/hello",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"greeter",
+								"hello"
+							]
+						},
+						"description": "Test that authentication is working"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Without Auth",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/books/my-library",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"my-library"
+							]
+						},
+						"description": "Test access without authentication (should fail with 401)"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Book Operations",
+			"item": [
+				{
+					"name": "1. Search Books",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    pm.test('Response has success field', () => {",
+									"        pm.expect(response).to.have.property('success');",
+									"    });",
+									"    pm.test('Response has results', () => {",
+									"        pm.expect(response).to.have.property('results');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/books/search?q=harry potter",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "harry potter"
+								}
+							]
+						},
+						"description": "Search for books using OpenLibrary API"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get Last Searches",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/books/last-search",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"last-search"
+							]
+						},
+						"description": "Get the last 5 searches of the user"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Add Book to Library",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.book && response.book.id) {",
+									"        pm.collectionVariables.set('bookId', response.book.id);",
+									"        console.log('Book ID saved:', response.book.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Harry Potter and the Philosopher's Stone\",\n    \"author\": \"J.K. Rowling\",\n    \"publishYear\": 1997,\n    \"coverBase64\": \"/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k=\",\n    \"review\": \"An amazing book that started the magical journey. The story of Harry discovering he's a wizard is captivating and full of wonder.\",\n    \"rating\": 5\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/books/my-library",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"my-library"
+							]
+						},
+						"description": "Add a book to my library with review and rating"
+					},
+					"response": []
+				},
+				{
+					"name": "4. Get My Library",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/books/my-library",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"my-library"
+							]
+						},
+						"description": "Get all books in my library"
+					},
+					"response": []
+				},
+				{
+					"name": "5. Get My Library (Filtered)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/books/my-library?title=Harry&sortByRating=desc&excludeNoReview=true",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"my-library"
+							],
+							"query": [
+								{
+									"key": "title",
+									"value": "Harry"
+								},
+								{
+									"key": "author",
+									"value": "Rowling",
+									"disabled": true
+								},
+								{
+									"key": "sortByRating",
+									"value": "desc"
+								},
+								{
+									"key": "excludeNoReview",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get books with filters (title, author, exclude no review, sort by rating)"
+					},
+					"response": []
+				},
+				{
+					"name": "6. Get Book by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/books/my-library/{{bookId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"my-library",
+								"{{bookId}}"
+							]
+						},
+						"description": "Get a specific book from my library by ID. Run '3. Add Book to Library' first to get a bookId"
+					},
+					"response": []
+				},
+				{
+					"name": "7. Update Book",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"review\": \"After re-reading, I appreciate even more the depth of the world-building and character development. Truly a masterpiece.\",\n    \"rating\": 5\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/books/my-library/{{bookId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"my-library",
+								"{{bookId}}"
+							]
+						},
+						"description": "Update review and rating of a book. Run '3. Add Book to Library' first to get a bookId"
+					},
+					"response": []
+				},
+				{
+					"name": "8. Get Book Cover",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/books/library/front-cover/{{bookId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"library",
+								"front-cover",
+								"{{bookId}}"
+							]
+						},
+						"description": "Get the cover image of a book. Run '3. Add Book to Library' first to get a bookId"
+					},
+					"response": []
+				},
+				{
+					"name": "9. Delete Book",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/books/my-library/{{bookId}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"my-library",
+								"{{bookId}}"
+							]
+						},
+						"description": "Delete a book from my library. Run '3. Add Book to Library' first to get a bookId"
+					},
+					"response": []
+				},
+				{
+					"name": "10. Search Books (Different Query)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:3000/api/books/search?q=lord of the rings",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "lord of the rings"
+								}
+							]
+						},
+						"description": "Search for different books"
+					},
+					"response": []
+				},
+				{
+					"name": "11. Add Another Book",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.book && response.book.id) {",
+									"        pm.collectionVariables.set('secondBookId', response.book.id);",
+									"        console.log('Second Book ID saved:', response.book.id);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"The Fellowship of the Ring\",\n    \"author\": \"J.R.R. Tolkien\",\n    \"publishYear\": 1954,\n    \"review\": \"The beginning of an epic adventure. Tolkien's world-building is unparalleled.\",\n    \"rating\": 4\n}"
+						},
+						"url": {
+							"raw": "http://localhost:3000/api/books/my-library",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "3000",
+							"path": [
+								"api",
+								"books",
+								"my-library"
+							]
+						},
+						"description": "Add another book to test multiple books in library"
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "basic",
+		"basic": [
+			{
+				"key": "username",
+				"value": "admin",
+				"type": "string"
+			},
+			{
+				"key": "password",
+				"value": "admin123",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Log response for debugging",
+					"if (pm.response.code !== 200) {",
+					"    console.log('Response Status:', pm.response.code);",
+					"    console.log('Response Body:', pm.response.text());",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "bookId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "secondBookId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
