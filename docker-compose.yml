@@ -1,0 +1,69 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: bookstore-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin123
+      MONGO_INITDB_DATABASE: bookstore_db
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - bookstore-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Backend API (Moleculer)
+  backend:
+    build:
+      context: ./bookstore-api
+      dockerfile: Dockerfile
+    container_name: bookstore-backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      MONGO_URI: mongodb://admin:admin123@mongodb:27017/bookstore_db?authSource=admin
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - bookstore-network
+
+  # Frontend (Nuxt)
+  frontend:
+    build:
+      context: ./biblioteca-spa
+      dockerfile: Dockerfile
+    container_name: bookstore-frontend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      NUXT_PUBLIC_API_BASE_URL: http://localhost:3000
+      NITRO_PORT: 3001
+      NITRO_HOST: 0.0.0.0
+      NODE_ENV: development
+    depends_on:
+      - backend
+    networks:
+      - bookstore-network
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  bookstore-network:
+    driver: bridge
