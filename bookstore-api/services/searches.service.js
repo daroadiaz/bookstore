@@ -1,5 +1,4 @@
 const DbMixin = require("../mixins/db.mixin");
-const { ObjectId } = require("mongodb");
 
 module.exports = {
 	name: "searches",
@@ -22,14 +21,24 @@ module.exports = {
 			},
 			async handler(ctx) {
 				const { userId, query } = ctx.params;
-
 				const userIdStr = userId.toString();
 
-				await this.adapter.insert({
+				const existingSearch = await this.adapter.findOne({
 					userId: userIdStr,
-					query,
-					timestamp: Date.now()
+					query: query
 				});
+
+				if (!existingSearch) {
+					await this.adapter.insert({
+						userId: userIdStr,
+						query,
+						timestamp: Date.now()
+					});
+				} else {
+					await this.adapter.updateById(existingSearch._id, {
+						$set: { timestamp: Date.now() }
+					});
+				}
 
 				return { success: true };
 			}
@@ -41,7 +50,6 @@ module.exports = {
 			},
 			async handler(ctx) {
 				const { userId } = ctx.params;
-
 				const userIdStr = userId.toString();
 
 				const searches = await this.adapter.find({
@@ -52,10 +60,7 @@ module.exports = {
 
 				return {
 					success: true,
-					searches: searches.map(s => ({
-						query: s.query,
-						timestamp: s.timestamp
-					}))
+					searches: searches.map(s => s.query)
 				};
 			}
 		}

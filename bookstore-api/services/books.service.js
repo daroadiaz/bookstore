@@ -33,7 +33,6 @@ module.exports = {
 			},
 			async handler(ctx) {
 				const { q } = ctx.params;
-				
 				const userId = ctx.meta.user.id.toString();
 
 				await ctx.call("searches.saveSearch", { 
@@ -49,32 +48,13 @@ module.exports = {
 						}
 					});
 
-					const userBooks = await this.adapter.find({
-						query: { userId: userId }
-					});
-
-					const results = response.data.docs.map(book => {
-						const savedBook = userBooks.find(ub => 
-							ub.title === book.title || 
-							(book.key && ub.bookId === book.key)
-						);
-
-						let coverUrl = null;
-						if (savedBook && savedBook.coverBase64) {
-							coverUrl = `/api/books/library/front-cover/${savedBook.bookId}`;
-						} else if (book.cover_i) {
-							coverUrl = `https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg`;
-						}
-
-						return {
-							key: book.key,
-							title: book.title,
-							author: book.author_name ? book.author_name[0] : "Unknown",
-							publishYear: book.first_publish_year,
-							coverUrl: coverUrl,
-							isInLibrary: !!savedBook
-						};
-					});
+					const results = response.data.docs.map(book => ({
+						key: book.key,
+						title: book.title,
+						author_name: book.author_name,
+						first_publish_year: book.first_publish_year,
+						cover_i: book.cover_i
+					}));
 
 					return {
 						success: true,
@@ -82,7 +62,12 @@ module.exports = {
 						results: results
 					};
 				} catch (error) {
-					throw new Error("Error searching books from OpenLibrary");
+					this.logger.error("Error searching books:", error);
+					return {
+						success: true,
+						count: 0,
+						results: []
+					};
 				}
 			}
 		},
@@ -121,7 +106,10 @@ module.exports = {
 				});
 
 				if (existingBook) {
-					throw new Error("Book already exists in your library");
+					return {
+						success: false,
+						message: "Este libro ya existe en tu biblioteca"
+					};
 				}
 
 				const book = await this.adapter.insert({
@@ -133,7 +121,7 @@ module.exports = {
 
 				return {
 					success: true,
-					message: "Book added successfully to your library",
+					message: "Libro agregado exitosamente a tu biblioteca",
 					book: {
 						id: book.bookId,
 						title: book.title,
@@ -164,19 +152,22 @@ module.exports = {
 				});
 
 				if (!book) {
-					throw new Error("Book not found in your library");
+					throw new Error("Libro no encontrado en tu biblioteca");
 				}
 
 				return {
-					id: book.bookId,
-					title: book.title,
-					author: book.author,
-					publishYear: book.publishYear,
-					coverBase64: book.coverBase64,
-					review: book.review,
-					rating: book.rating,
-					createdAt: book.createdAt,
-					updatedAt: book.updatedAt
+					success: true,
+					book: {
+						id: book.bookId,
+						title: book.title,
+						author: book.author,
+						publishYear: book.publishYear,
+						coverBase64: book.coverBase64,
+						review: book.review,
+						rating: book.rating,
+						createdAt: book.createdAt,
+						updatedAt: book.updatedAt
+					}
 				};
 			}
 		},
@@ -201,7 +192,7 @@ module.exports = {
 				});
 
 				if (!book) {
-					throw new Error("Book not found in your library");
+					throw new Error("Libro no encontrado en tu biblioteca");
 				}
 
 				const updateData = {
@@ -215,7 +206,7 @@ module.exports = {
 
 				return {
 					success: true,
-					message: "Book updated successfully"
+					message: "Libro actualizado exitosamente"
 				};
 			}
 		},
@@ -238,14 +229,14 @@ module.exports = {
 				});
 
 				if (!book) {
-					throw new Error("Book not found in your library");
+					throw new Error("Libro no encontrado en tu biblioteca");
 				}
 
 				await this.adapter.removeById(book._id);
 
 				return {
 					success: true,
-					message: "Book deleted successfully from your library"
+					message: "Libro eliminado exitosamente de tu biblioteca"
 				};
 			}
 		},
@@ -280,7 +271,7 @@ module.exports = {
 					query.author = { $regex: author, $options: "i" };
 				}
 
-				if (excludeNoReview) {
+				if (excludeNoReview === true) {
 					query.review = { $exists: true, $ne: null, $ne: "" };
 				}
 
@@ -302,7 +293,7 @@ module.exports = {
 						title: book.title,
 						author: book.author,
 						publishYear: book.publishYear,
-						coverUrl: book.coverBase64 ? `/api/books/library/front-cover/${book.bookId}` : null,
+						coverBase64: book.coverBase64,
 						review: book.review,
 						rating: book.rating,
 						createdAt: book.createdAt,
@@ -330,7 +321,7 @@ module.exports = {
 				});
 
 				if (!book || !book.coverBase64) {
-					throw new Error("Cover not found");
+					throw new Error("Portada no encontrada");
 				}
 
 				ctx.meta.$responseType = "image/jpeg";
@@ -338,7 +329,8 @@ module.exports = {
 					"Content-Type": "image/jpeg"
 				};
 
-				return Buffer.from(book.coverBase64, "base64");
+				const base64Data = book.coverBase64.replace(/^data:image\/\w+;base64,/, "");
+				return Buffer.from(base64Data, "base64");
 			}
 		}
 	}
