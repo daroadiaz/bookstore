@@ -17,6 +17,7 @@ module.exports = {
 			review: { type: "string", max: 500 },
 			rating: { type: "number", min: 1, max: 5 },
 			userId: { type: "string", required: true },
+			openLibraryKey: { type: "string" }, // Para vincular con OpenLibrary
 			createdAt: { type: "number", onCreate: () => Date.now() },
 			updatedAt: { type: "number", onUpdate: () => Date.now() }
 		}
@@ -35,12 +36,15 @@ module.exports = {
 				const { q } = ctx.params;
 				const userId = ctx.meta.user.id.toString();
 
+				// Guardar la búsqueda
 				await ctx.call("searches.saveSearch", { 
 					userId: userId,
 					query: q 
 				});
 
 				try {
+					this.logger.info(`Searching books with query: ${q}`);
+					
 					const response = await axios.get(`https://openlibrary.org/search.json`, {
 						params: {
 							q: q,
@@ -48,13 +52,44 @@ module.exports = {
 						}
 					});
 
-					const results = response.data.docs.map(book => ({
-						key: book.key,
-						title: book.title,
-						author_name: book.author_name,
-						first_publish_year: book.first_publish_year,
-						cover_i: book.cover_i
-					}));
+					// Obtener libros guardados del usuario
+					const savedBooks = await this.adapter.find({
+						query: { userId }
+					});
+
+					// Crear un mapa de libros guardados por key de OpenLibrary
+					const savedBooksMap = {};
+					savedBooks.forEach(book => {
+						if (book.openLibraryKey) {
+							savedBooksMap[book.openLibraryKey] = book;
+						}
+					});
+
+					const results = response.data.docs.map(book => {
+						const bookData = {
+							key: book.key,
+							title: book.title,
+							author_name: book.author_name,
+							first_publish_year: book.first_publish_year,
+							cover_i: book.cover_i,
+							inLibrary: false,
+							libraryBookId: null
+						};
+
+						// Verificar si el libro está en la biblioteca
+						if (savedBooksMap[book.key]) {
+							bookData.inLibrary = true;
+							bookData.libraryBookId = savedBooksMap[book.key].bookId;
+							// Si tenemos portada guardada, usar el endpoint local
+							if (savedBooksMap[book.key].coverBase64) {
+								bookData.localCoverUrl = `/api/books/library/front-cover/${savedBooksMap[book.key].bookId}`;
+							}
+						}
+
+						return bookData;
+					});
+
+					this.logger.info(`Found ${results.length} results`);
 
 					return {
 						success: true,
@@ -66,7 +101,8 @@ module.exports = {
 					return {
 						success: true,
 						count: 0,
-						results: []
+						results: [],
+						message: "No encontramos libros con el título ingresado"
 					};
 				}
 			}
@@ -79,6 +115,7 @@ module.exports = {
 			},
 			async handler(ctx) {
 				const userId = ctx.meta.user.id.toString();
+				this.logger.info(`Getting last searches for user: ${userId}`);
 				return await ctx.call("searches.getLastSearches", { userId });
 			}
 		},
@@ -94,18 +131,23 @@ module.exports = {
 				publishYear: { type: "number", optional: true },
 				coverBase64: { type: "string", optional: true },
 				review: { type: "string", max: 500, optional: true },
-				rating: { type: "number", min: 1, max: 5, optional: true }
+				rating: { type: "number", min: 1, max: 5, optional: true },
+				openLibraryKey: { type: "string", optional: true }
 			},
 			async handler(ctx) {
 				const userId = ctx.meta.user.id.toString();
 				const bookId = uuidv4();
 
+				this.logger.info(`Adding book to library: ${ctx.params.title} for user: ${userId}`);
+
+				// Verificar si el libro ya existe
 				const existingBook = await this.adapter.findOne({
 					userId,
 					title: ctx.params.title
 				});
 
 				if (existingBook) {
+					this.logger.warn(`Book already exists: ${ctx.params.title}`);
 					return {
 						success: false,
 						message: "Este libro ya existe en tu biblioteca"
@@ -118,6 +160,8 @@ module.exports = {
 					userId,
 					createdAt: Date.now()
 				});
+
+				this.logger.info(`Book added successfully with ID: ${bookId}`);
 
 				return {
 					success: true,
@@ -146,12 +190,15 @@ module.exports = {
 				const { id } = ctx.params;
 				const userId = ctx.meta.user.id.toString();
 
+				this.logger.info(`Getting book ${id} for user ${userId}`);
+
 				const book = await this.adapter.findOne({
 					bookId: id,
 					userId
 				});
 
 				if (!book) {
+					this.logger.warn(`Book not found: ${id}`);
 					throw new Error("Libro no encontrado en tu biblioteca");
 				}
 
@@ -186,12 +233,15 @@ module.exports = {
 				const { id, review, rating } = ctx.params;
 				const userId = ctx.meta.user.id.toString();
 
+				this.logger.info(`Updating book ${id} for user ${userId}`);
+
 				const book = await this.adapter.findOne({
 					bookId: id,
 					userId
 				});
 
 				if (!book) {
+					this.logger.warn(`Book not found for update: ${id}`);
 					throw new Error("Libro no encontrado en tu biblioteca");
 				}
 
@@ -203,6 +253,8 @@ module.exports = {
 				if (rating !== undefined) updateData.rating = rating;
 
 				await this.adapter.updateById(book._id, { $set: updateData });
+
+				this.logger.info(`Book ${id} updated successfully`);
 
 				return {
 					success: true,
@@ -223,16 +275,21 @@ module.exports = {
 				const { id } = ctx.params;
 				const userId = ctx.meta.user.id.toString();
 
+				this.logger.info(`Deleting book ${id} for user ${userId}`);
+
 				const book = await this.adapter.findOne({
 					bookId: id,
 					userId
 				});
 
 				if (!book) {
+					this.logger.warn(`Book not found for deletion: ${id}`);
 					throw new Error("Libro no encontrado en tu biblioteca");
 				}
 
 				await this.adapter.removeById(book._id);
+
+				this.logger.info(`Book ${id} deleted successfully`);
 
 				return {
 					success: true,
@@ -261,8 +318,11 @@ module.exports = {
 				const userId = ctx.meta.user.id.toString();
 				const { title, author, excludeNoReview, sortByRating } = ctx.params;
 
+				this.logger.info(`Getting library for user ${userId} with filters:`, ctx.params);
+
 				let query = { userId };
 
+				// Aplicar filtros
 				if (title) {
 					query.title = { $regex: title, $options: "i" };
 				}
@@ -284,6 +344,8 @@ module.exports = {
 					query,
 					sort
 				});
+
+				this.logger.info(`Found ${books.length} books in library`);
 
 				return {
 					success: true,
@@ -315,12 +377,15 @@ module.exports = {
 				const { id } = ctx.params;
 				const userId = ctx.meta.user.id.toString();
 
+				this.logger.info(`Getting cover for book ${id}`);
+
 				const book = await this.adapter.findOne({
 					bookId: id,
 					userId
 				});
 
 				if (!book || !book.coverBase64) {
+					this.logger.warn(`Cover not found for book ${id}`);
 					throw new Error("Portada no encontrada");
 				}
 

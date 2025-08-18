@@ -1,23 +1,16 @@
 <template>
-  <div>
-    <SearchSection v-if="!selectedBook && searchResults.length === 0" />
-    <SearchResults v-else-if="searchResults.length > 0 && !selectedBook" />
-    <BookDetail v-else-if="selectedBook" />
-  </div>
+  <div></div>
 </template>
 
-<script setup lang="ts">
-import { useBooksStore } from '~/stores/books'
+<script setup>
+import { useAuthStore } from '~/stores/auth'
 
-definePageMeta({
-  middleware: 'auth'
-})
+const authStore = useAuthStore()
 
-const booksStore = useBooksStore()
-const searchResults = computed(() => booksStore.getSearchResults)
-const selectedBook = computed(() => booksStore.getCurrentBook)
-
-onMounted(() => {
-  booksStore.fetchRecentSearches()
-})
+// Redirigir según el estado de autenticación
+if (authStore.isAuthenticated) {
+  navigateTo('/search')
+} else {
+  navigateTo('/login')
+}
 </script>

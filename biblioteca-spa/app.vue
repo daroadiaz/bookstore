@@ -1,16 +1,17 @@
 <template>
-  <div class="app-container">
-    <AppHeader v-if="authStore.isAuthenticated" />
+  <NuxtLayout>
     <NuxtPage />
-  </div>
+  </NuxtLayout>
 </template>
 
-<script setup lang="ts">
+<script setup>
+import { onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
 const authStore = useAuthStore()
 
 onMounted(() => {
+
   authStore.initAuth()
 })
 </script>
