@@ -1,12 +1,15 @@
 db = db.getSiblingDB('admin');
 
-db.createUser({
-  user: 'admin',
-  pwd: 'admin123',
-  roles: [
-    { role: 'root', db: 'admin' }
-  ]
-});
+const user = db.getUser("admin");
+  if (!user) {
+    db.createUser({
+      user: 'admin',
+      pwd: 'admin123',
+      roles: [
+        { role: 'root', db: 'admin' }
+      ]
+    });
+  }
 
 db = db.getSiblingDB('bookstore_db');
 
