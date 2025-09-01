@@ -1,5 +1,9 @@
 # README
 
+## 📋 Requerimiento
+
+- https://drive.google.com/file/d/19ZvKYIzMciyltgjSzijv9Uy2PKWw82GR/view?usp=sharing
+
 ## 📋 Requisitos Previos
 
 - Docker
